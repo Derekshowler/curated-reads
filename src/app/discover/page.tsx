@@ -3,6 +3,8 @@
 
 import { useState } from 'react';
 import type { Book } from '@/lib/books/types';
+import Link from 'next/link';
+import { SiteHeader } from '@/app/_components/site-header';
 
 export default function DiscoverPage() {
   const [query, setQuery] = useState('');
@@ -41,25 +43,7 @@ export default function DiscoverPage() {
     <main className="min-h-screen bg-stone-950 text-stone-50">
       <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-10">
         {/* Header */}
-        <header className="mb-10 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/90 text-sm font-semibold">
-              CR
-            </span>
-            <span className="text-lg font-semibold tracking-tight">Curated Reads</span>
-          </div>
-          <nav className="flex items-center gap-4 text-sm text-stone-300">
-            <a
-              href="/"
-              className="rounded-full border border-stone-700 px-3 py-1 hover:border-stone-500 hover:text-stone-100"
-            >
-              Home
-            </a>
-            <span className="rounded-full bg-stone-800 px-3 py-1 text-stone-100">
-              Discover
-            </span>
-          </nav>
-        </header>
+        <SiteHeader active="discover" />
 
         {/* Search section */}
         <section>
@@ -117,9 +101,12 @@ export default function DiscoverPage() {
           {results.length > 0 && (
             <ul className="grid gap-4 md:grid-cols-2">
               {results.map((book) => {
-                const authors = book.authors.join(', ');
+                const authors = book.authors.length ? book.authors.join(', ') : '';
                 const year = book.publishedYear;
                 const coverUrl = book.coverImageUrl;
+                const detailsHref = book.id
+                  ? `/book/${encodeURIComponent(book.id)}`
+                  : null;
 
                 return (
                   <li
@@ -147,12 +134,14 @@ export default function DiscoverPage() {
                           First published {year}
                         </p>
                       )}
-                      <button
-                        type="button"
-                        className="mt-auto w-fit rounded-full bg-stone-800 px-3 py-1 text-xs text-stone-100 hover:bg-stone-700"
-                      >
-                        View details
-                      </button>
+                      {detailsHref && (
+                        <Link
+                          href={detailsHref}
+                          className="mt-auto w-fit rounded-full bg-stone-800 px-3 py-1 text-xs text-stone-100 hover:bg-stone-700"
+                        >
+                          View details
+                        </Link>
+                      )}
                     </div>
                   </li>
                 );
