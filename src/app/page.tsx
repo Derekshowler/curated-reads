@@ -37,7 +37,7 @@ export default function HomePage() {
               <span className="block text-amber-400">your next read.</span>
             </h1>
             <p className="mt-6 max-w-md text-sm text-stone-300 md:text-base">
-              CuratedReads surfaces the books you&apos;ll actually love — no
+              Curated Reads surfaces the books you&apos;ll actually love — no
               endless scrolling, no generic lists, just handpicked reads that
               feel like you.
             </p>
