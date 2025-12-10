@@ -10,11 +10,15 @@ export default function HomePage() {
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/90 text-sm font-semibold">
               CR
             </span>
-            <span className="text-lg font-semibold tracking-tight">
-              Curated Reads
-            </span>
+            <span className="text-lg font-semibold tracking-tight">Curated Reads</span>
           </div>
           <nav className="flex items-center gap-4 text-sm text-stone-300">
+            <a
+              href="/discover"
+              className="rounded-full border border-stone-700 px-3 py-1 hover:border-stone-500 hover:text-stone-100"
+            >
+              Discover
+            </a>
             <button className="rounded-full border border-stone-700 px-3 py-1 hover:border-stone-500 hover:text-stone-100">
               Log in
             </button>
@@ -23,6 +27,7 @@ export default function HomePage() {
             </button>
           </nav>
         </header>
+
 
         {/* Hero */}
         <section className="mt-20 flex flex-1 flex-col gap-10 md:flex-row md:items-center">
