@@ -1,21 +1,57 @@
 // src/app/discover/page.tsx
 'use client';
 
-import { useState } from 'react';
-import type { Book } from '@/lib/books/types';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { SiteHeader } from '@/app/_components/site-header';
+import type { Book } from '@/lib/books/types';
+import { SiteHeader } from '../_components/site-header';
 
 export default function DiscoverPage() {
-  const [query, setQuery] = useState('');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const initialQuery = searchParams.get('q') ?? '';
+
+  const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
+  const [hasSearched, setHasSearched] = useState(!!initialQuery);
   const [error, setError] = useState<string | null>(null);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
-  async function handleSearch(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const trimmed = query.trim();
+  // Load recent searches from localStorage on first mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const raw = window.localStorage.getItem('cr_recent_searches');
+    if (!raw) return;
+
+    try {
+      const parsed = JSON.parse(raw) as string[];
+      setRecentSearches(parsed.slice(0, 5));
+    } catch {
+      // ignore bad JSON
+    }
+  }, []);
+
+  // Helper to persist recent searches
+  function recordRecentSearch(term: string) {
+    if (typeof window === 'undefined') return;
+
+    setRecentSearches((prev) => {
+      const next = [
+        term,
+        ...prev.filter((q) => q.toLowerCase() !== term.toLowerCase()),
+      ].slice(0, 5);
+
+      window.localStorage.setItem('cr_recent_searches', JSON.stringify(next));
+      return next;
+    });
+  }
+
+  // Core search function (used by form + recent-search chips + URL hydrate)
+  async function runSearch(term: string) {
+    const trimmed = term.trim();
     if (!trimmed) return;
 
     setIsLoading(true);
@@ -30,6 +66,7 @@ export default function DiscoverPage() {
 
       const data = await res.json();
       setResults(data.books ?? []);
+      recordRecentSearch(trimmed);
     } catch (err) {
       console.error(err);
       setError('Something went wrong while searching. Please try again.');
@@ -39,20 +76,42 @@ export default function DiscoverPage() {
     }
   }
 
+  // When the URL has ?q=..., hydrate the page from it
+  useEffect(() => {
+    if (!initialQuery) return;
+
+    // keep input in sync with URL
+    setQuery(initialQuery);
+    runSearch(initialQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuery]);
+
+  async function handleSearch(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const trimmed = query.trim();
+    if (!trimmed) return;
+
+    router.push(`/discover?q=${encodeURIComponent(trimmed)}`, {
+      scroll: false,
+    });
+    await runSearch(trimmed);
+  }
+
   return (
     <main className="min-h-screen bg-stone-950 text-stone-50">
       <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-10">
-        {/* Header */}
-        <SiteHeader active="discover" />
+        {/* Shared site header */}
+        <SiteHeader />
 
         {/* Search section */}
-        <section>
+        <section className="mt-10">
           <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
             Discover your next read
           </h1>
           <p className="mt-3 max-w-xl text-sm text-stone-300 md:text-base">
-            Search across millions of books. We&apos;ll soon add vibes, moods, and
-            personalized picks — for now, start exploring what&apos;s out there.
+            Search across millions of books. We&apos;ll soon add vibes, moods,
+            and personalized picks — for now, start exploring what&apos;s out
+            there.
           </p>
 
           <form
@@ -75,9 +134,38 @@ export default function DiscoverPage() {
             </button>
           </form>
 
-          {error && (
-            <p className="mt-4 text-sm text-red-400">
-              {error}
+          {/* Recent searches */}
+          {recentSearches.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-[11px] uppercase tracking-[0.16em] text-stone-500">
+                Recent
+              </span>
+              {recentSearches.map((term) => (
+                <button
+                  key={term}
+                  type="button"
+                  onClick={() => {
+                    setQuery(term);
+                    router.push(`/discover?q=${encodeURIComponent(term)}`, {
+                      scroll: false,
+                    });
+                    runSearch(term);
+                  }}
+                  className="rounded-full border border-stone-700/70 bg-stone-900/70 px-3 py-1 text-xs text-stone-200 hover:border-amber-400/80 hover:text-amber-200"
+                >
+                  {term}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
+
+          {!hasSearched && recentSearches.length === 0 && !error && (
+            <p className="mt-6 text-sm text-stone-500">
+              Try searching for &quot;Brandon Sanderson&quot;, &quot;cozy
+              mystery&quot;, or &quot;Vietnamese fiction&quot; to get a feel
+              for the results.
             </p>
           )}
         </section>
@@ -90,28 +178,17 @@ export default function DiscoverPage() {
             </p>
           )}
 
-          {!hasSearched && (
-            <p className="mt-6 text-sm text-stone-500">
-              Try searching for &quot;Brandon Sanderson&quot;, &quot;cozy
-              mystery&quot;, or &quot;Vietnamese fiction&quot; to get a feel
-              for the results.
-            </p>
-          )}
-
           {results.length > 0 && (
             <ul className="grid gap-4 md:grid-cols-2">
               {results.map((book) => {
-                const authors = book.authors.length ? book.authors.join(', ') : '';
+                const authors = book.authors.join(', ');
                 const year = book.publishedYear;
                 const coverUrl = book.coverImageUrl;
-                const detailsHref = book.id
-                  ? `/book/${encodeURIComponent(book.id)}`
-                  : null;
 
                 return (
                   <li
                     key={book.id}
-                    className="flex gap-4 rounded-2xl border border-stone-800 bg-stone-900/60 p-3"
+                    className="flex gap-4 rounded-2xl border border-stone-800 bg-stone-900/60 p-3 transition-transform transition-colors hover:-translate-y-0.5 hover:border-amber-500/60 hover:bg-stone-900"
                   >
                     {coverUrl && (
                       <img
@@ -134,14 +211,12 @@ export default function DiscoverPage() {
                           First published {year}
                         </p>
                       )}
-                      {detailsHref && (
-                        <Link
-                          href={detailsHref}
-                          className="mt-auto w-fit rounded-full bg-stone-800 px-3 py-1 text-xs text-stone-100 hover:bg-stone-700"
-                        >
-                          View details
-                        </Link>
-                      )}
+                      <Link
+                        href={`/book/${encodeURIComponent(book.id)}`}
+                        className="mt-auto inline-flex w-fit rounded-full bg-stone-800 px-3 py-1 text-xs text-stone-100 hover:bg-stone-700"
+                      >
+                        View details
+                      </Link>
                     </div>
                   </li>
                 );
@@ -153,5 +228,3 @@ export default function DiscoverPage() {
     </main>
   );
 }
-
-
