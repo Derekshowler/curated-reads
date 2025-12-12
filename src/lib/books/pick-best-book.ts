@@ -87,7 +87,14 @@ export function rankBooksForCuration(
 
     score += titleMatchScore(b.title ?? '', targetTitle);
     score += authorMatchScore(b, targetAuthor);
-    score += yearScore(b.publishedYear);
+    const publishedYear =
+      typeof b.publishedYear === 'string'
+        ? parseInt(b.publishedYear, 10)
+        : b.publishedYear ?? undefined;
+
+    score += yearScore(
+      Number.isNaN(publishedYear as number) ? undefined : (publishedYear as number | undefined)
+    );
 
     if (isLikelySummaryOrDerivative(b.title ?? '')) score -= 40;
 
