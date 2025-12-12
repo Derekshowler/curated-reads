@@ -1,11 +1,12 @@
 // src/app/book/[id]/page.tsx
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getBookByIdIsbndb } from '@/lib/books/isbndb';
 import { SiteHeader } from '@/app/_components/site-header';
-import type { Book } from '@/lib/books/types';
 import { BookHeroClient } from './book-hero.client';
 import { getBookTheme } from '@/lib/books/theme';
+import { getMoodTags } from '@/lib/books/vibes';
 
 type PageProps = {
   // Next 15+ style: params is a Promise
@@ -48,12 +49,12 @@ export default async function BookPage({ params }: PageProps) {
       <div className="mx-auto max-w-5xl px-6 py-10">
         <SiteHeader />
 
-        <a
+        <Link
           href="/discover"
           className="mt-2 inline-flex text-sm text-stone-400 hover:text-stone-100"
         >
           ← Back to Discover
-        </a>
+        </Link>
 
         {/* Hero card with blurred cover + themed gradient */}
         <BookHeroClient
@@ -76,29 +77,4 @@ export default async function BookPage({ params }: PageProps) {
       </div>
     </main>
   );
-}
-
-/**
- * Simple mood/vibe tags.
- * For now this is a heuristic — later we can drive it from genres, themes,
- * or even an AI classifier.
- */
-function getMoodTags(book: Book): string[] {
-  const moods: string[] = [];
-  const title = book.title.toLowerCase();
-
-  // Very rough heuristics just to make it feel alive
-  if (title.includes('will of the many')) {
-    moods.push('Epic fantasy', 'Political intrigue', 'Dark academia');
-  }
-
-  if (book.pageCount && book.pageCount > 500) {
-    moods.push('Chunky read');
-  }
-
-  if (!moods.length) {
-    moods.push('Curated pick');
-  }
-
-  return moods;
 }
