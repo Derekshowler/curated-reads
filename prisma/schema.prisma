@@ -1,0 +1,64 @@
+datasource db {
+  provider = "postgresql"
+}
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String?
+  image     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  profiles  Profile[]
+  lists     BookList[]
+}
+
+model Profile {
+  id           String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  displayName String?
+  bio         String?
+  location    String?
+  favoriteGenres String?
+  websiteUrl  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model BookList {
+  id          String         @id @default(cuid())
+  user        User           @relation(fields: [userId], references: [id])
+  userId      String
+  name        String
+  slug        String
+  emoji       String?
+  description String?
+  visibility  String         @default("private")
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  items       BookListItem[]
+}
+
+model BookListItem {
+  id             String    @id @default(cuid())
+  list           BookList  @relation(fields: [listId], references: [id])
+  listId         String
+
+  bookId         String
+  position       Int       @default(0)
+
+  title          String
+  authors        String
+  coverImageUrl  String?
+  publishedYear  String?
+
+  createdAt      DateTime  @default(now())
+}
