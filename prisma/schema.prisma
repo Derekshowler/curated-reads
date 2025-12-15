@@ -12,7 +12,7 @@ model User {
   id            String    @id @default(cuid())
   name          String?
   email         String?   @unique
-  emailVerified DateTime? // 👈 must exist and be optional
+  emailVerified DateTime?
   image         String?
 
   createdAt DateTime @default(now())
