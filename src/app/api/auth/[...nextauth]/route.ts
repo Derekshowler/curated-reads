@@ -24,4 +24,4 @@ const handler = NextAuth({
   },
 });
 
-export { handlers as GET, handlers as POST } from "@/auth";
+export { handler as GET, handler as POST };
