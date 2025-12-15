@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getBookByIdIsbndb } from '@/lib/books/isbndb';
-import { SiteHeader } from '@/app/_components/site-header';
 import { BookHeroClient } from './book-hero.client';
 import { getBookTheme } from '@/lib/books/theme';
 import { getMoodTags } from '@/lib/books/vibes';
@@ -47,7 +46,7 @@ export default async function BookPage({ params }: PageProps) {
   return (
     <main className="min-h-screen bg-stone-950 text-stone-50">
       <div className="mx-auto max-w-5xl px-6 py-10">
-        <SiteHeader />
+        {/* Header is now global in layout.tsx, so no SiteHeader here */}
 
         <Link
           href="/discover"
