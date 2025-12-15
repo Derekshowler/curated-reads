@@ -1,6 +1,5 @@
 // src/app/page.tsx
 import Link from 'next/link';
-import { SiteHeader } from './_components/site-header';
 import {
   HOME_SHELVES,
   type ShelfSection,
@@ -279,7 +278,7 @@ export default async function HomePage() {
       {/* Soft global background glow */}
       <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(248,250,252,0.04),_transparent_55%),_radial-gradient(circle_at_bottom,_rgba(15,23,42,0.8),_transparent_55%)]">
         <div className="mx-auto max-w-5xl px-6 py-10">
-          <SiteHeader />
+          {/* ✅ Header is now only in layout.tsx, so no SiteHeader here */}
 
           {/* Hero */}
           <section className="mt-8 grid gap-8 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:items-center">
@@ -378,9 +377,6 @@ export default async function HomePage() {
                       </p>
                     )}
                   </div>
-
-                  {/* If you later add a `query` field back to the new shelf type,
-                      this link will be easy to re-enable. */}
                 </div>
 
                 <div className="-mx-1 flex gap-3 overflow-x-auto overflow-y-visible px-1 py-2">

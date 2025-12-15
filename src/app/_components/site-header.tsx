@@ -1,9 +1,12 @@
 // src/app/_components/site-header.tsx
+'use client';
+
 import Link from 'next/link';
+import { AuthButton } from './auth-button';
 
 export function SiteHeader() {
   return (
-    <header className="mb-8 flex items-center justify-between">
+    <div className="flex items-center justify-between">
       {/* Clickable logo → homepage */}
       <Link
         href="/"
@@ -17,7 +20,7 @@ export function SiteHeader() {
         </span>
       </Link>
 
-      {/* Simple nav (optional to tweak later) */}
+      {/* Nav + auth */}
       <nav className="flex items-center gap-4 text-sm text-stone-300">
         <Link
           href="/"
@@ -31,7 +34,9 @@ export function SiteHeader() {
         >
           Discover
         </Link>
+
+        <AuthButton />
       </nav>
-    </header>
+    </div>
   );
 }

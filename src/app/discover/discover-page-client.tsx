@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import type { Book } from '@/lib/books/types';
-import { SiteHeader } from '../_components/site-header';
 import { useBookLists } from '@/lib/lists/useBookLists';
 import type { ListBook } from '@/lib/lists/types';
 
@@ -156,11 +155,10 @@ export function DiscoverPageClient() {
   return (
     <main className="min-h-screen bg-stone-950 text-stone-50">
       <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-6 py-10">
-        {/* Shared site header */}
-        <SiteHeader />
+        {/* Header is global in layout.tsx, so nothing here */}
 
         {/* Search section */}
-        <section className="mt-10">
+        <section className="mt-4 md:mt-10">
           <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
             Discover your next read
           </h1>
