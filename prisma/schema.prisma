@@ -20,7 +20,7 @@ model User {
 
   accounts Account[]
   sessions Session[]
-  profiles Profile[]
+  profile Profile?
   lists    BookList[]
 }
 
@@ -63,15 +63,20 @@ model VerificationToken {
 model Profile {
   id             String   @id @default(cuid())
   user           User     @relation(fields: [userId], references: [id])
-  userId         String
+  userId         String   @unique
+
   displayName    String?
   bio            String?
+  vibeTags       String[] @default([])
+
   location       String?
   favoriteGenres String?
   websiteUrl     String?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
+
 
 model BookList {
   id          String   @id @default(cuid())
