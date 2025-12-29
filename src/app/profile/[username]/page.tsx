@@ -16,13 +16,10 @@ export default async function ProfilePage({ params }: PageProps) {
   const session = await getServerSession(authOptions);
   const viewerEmail = session?.user?.email ?? null;
 
-  // NOTE: you don’t have a real username/handle field yet.
-  // This is a placeholder lookup. Next step is adding Profile.username.
   const user = await prisma.user.findFirst({
     where: {
       OR: [
         { name: decoded },
-        // allow /profile/derekshowler@gmail.com for debugging
         { email: decoded.includes("@") ? decoded : undefined },
       ],
     },
@@ -31,9 +28,7 @@ export default async function ProfilePage({ params }: PageProps) {
       name: true,
       email: true,
       image: true,
-      profiles: {
-        orderBy: { updatedAt: "desc" },
-        take: 1,
+      profile: {
         select: { displayName: true, bio: true, vibeTags: true },
       },
     },
@@ -41,9 +36,8 @@ export default async function ProfilePage({ params }: PageProps) {
 
   if (!user) return notFound();
 
-  const profile = user.profiles[0] ?? null;
   const displayName =
-    profile?.displayName ?? user.name ?? user.email ?? "Reader";
+    user.profile?.displayName ?? user.name ?? user.email ?? "Reader";
 
   const isOwner = !!(viewerEmail && user.email && viewerEmail === user.email);
 
@@ -54,8 +48,8 @@ export default async function ProfilePage({ params }: PageProps) {
           username: decoded,
           displayName,
           avatarUrl: user.image,
-          bio: profile?.bio ?? null,
-          vibeTags: profile?.vibeTags ?? [],
+          bio: user.profile?.bio ?? null,
+          vibeTags: user.profile?.vibeTags ?? [],
           isOwner,
         }}
       />

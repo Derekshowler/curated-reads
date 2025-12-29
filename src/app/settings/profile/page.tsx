@@ -16,9 +16,7 @@ export default async function ProfileSettingsPage() {
       id: true,
       name: true,
       email: true,
-      profiles: {
-        orderBy: { updatedAt: "desc" },
-        take: 1,
+      profile: {
         select: {
           displayName: true,
           bio: true,
@@ -30,19 +28,17 @@ export default async function ProfileSettingsPage() {
 
   if (!user) redirect("/api/auth/signin");
 
-  const profile = user.profiles[0] ?? null;
-
   return (
     <div className="mx-auto w-full max-w-2xl">
       <h1 className="text-2xl font-semibold tracking-tight">Edit profile</h1>
       <p className="mt-1 text-sm text-stone-300/70">
-        Keep it simple. This is your reading space.
+        Add a short bio and up to 5 vibe tags.
       </p>
 
       <div className="mt-6">
         <ProfileSettingsForm
-          initialBio={profile?.bio ?? ""}
-          initialVibeTags={profile?.vibeTags ?? []}
+          initialBio={user.profile?.bio ?? ""}
+          initialVibeTags={user.profile?.vibeTags ?? []}
         />
       </div>
     </div>
