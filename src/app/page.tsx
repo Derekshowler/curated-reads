@@ -8,6 +8,7 @@ import {
 import type { Book } from '@/lib/books/types';
 import { headers } from 'next/headers';
 import { getBookByIdIsbndb } from '@/lib/books/isbndb';
+import { HScrollRow } from "@/app/_components/h-scroll-row";
 
 type ShelfWithBooks = {
   shelf: ShelfSection;
@@ -365,62 +366,41 @@ export default async function HomePage() {
           {/* Shelves */}
           <section className="mt-12 space-y-10">
             {shelves.map(({ shelf, books }) => (
-              <div key={shelf.key} id={shelf.key}>
-                <div className="mb-3 flex items-baseline justify-between gap-3">
-                  <div>
-                    <h2 className="text-lg font-semibold tracking-tight md:text-xl">
-                      {shelf.title}
-                    </h2>
-                    {shelf.subtitle && (
-                      <p className="mt-1 text-xs text-stone-400 md:text-sm">
-                        {shelf.subtitle}
+              <HScrollRow
+                key={shelf.key}
+                title={shelf.title}
+                subtitle={shelf.subtitle}
+                className=""
+              >
+                {books.map((book) => (
+                  <Link
+                    key={book.id}
+                    href={`/book/${encodeURIComponent(book.id)}`}
+                    className="min-w-[140px] max-w-[140px] flex-shrink-0 rounded-2xl border border-stone-800 bg-stone-900/70 p-2
+                              transition-transform transition-shadow transition-colors hover:-translate-y-1 hover:border-amber-500/70 hover:bg-stone-900 hover:shadow-[0_18px_45px_rgba(0,0,0,0.75)]"
+                  >
+                    {book.coverImageUrl && (
+                      <img
+                        src={book.coverImageUrl}
+                        alt={book.title}
+                        className="h-40 w-full rounded-lg object-cover"
+                        loading="lazy"
+                      />
+                    )}
+                    <p className="mt-2 line-clamp-2 text-xs font-medium text-stone-50">
+                      {book.title}
+                    </p>
+                    {book.authors.length > 0 && (
+                      <p className="mt-1 line-clamp-1 text-[11px] text-stone-400">
+                        {book.authors.join(", ")}
                       </p>
                     )}
-                  </div>
-                </div>
-
-                <div className="-mx-1 flex gap-3 overflow-x-auto overflow-y-visible px-1 py-2">
-                  {books.map((book) => (
-                    <Link
-                      key={book.id}
-                      href={`/book/${encodeURIComponent(book.id)}`}
-                      className="min-w-[140px] max-w-[140px] flex-shrink-0 rounded-2xl border border-stone-800 bg-stone-900/70 p-2
-                                 transition-transform transition-shadow transition-colors hover:-translate-y-1 hover:border-amber-500/70 hover:bg-stone-900 hover:shadow-[0_18px_45px_rgba(0,0,0,0.75)]"
-                    >
-                      {book.coverImageUrl && (
-                        <img
-                          src={book.coverImageUrl}
-                          alt={book.title}
-                          className="h-40 w-full rounded-lg object-cover"
-                        />
-                      )}
-                      <p className="mt-2 line-clamp-2 text-xs font-medium text-stone-50">
-                        {book.title}
-                      </p>
-                      {book.authors.length > 0 && (
-                        <p className="mt-1 line-clamp-1 text-[11px] text-stone-400">
-                          {book.authors.join(', ')}
-                        </p>
-                      )}
-                    </Link>
-                  ))}
-                </div>
-              </div>
+                  </Link>
+                ))}
+              </HScrollRow>
             ))}
-
-            {shelves.length === 0 && (
-              <p className="text-sm text-stone-400">
-                We&apos;re still curating shelves behind the scenes. Try the{' '}
-                <Link
-                  href="/discover"
-                  className="text-amber-300 underline underline-offset-2 hover:text-amber-200"
-                >
-                  Discover
-                </Link>{' '}
-                page in the meantime.
-              </p>
-            )}
           </section>
+
         </div>
       </div>
     </main>
