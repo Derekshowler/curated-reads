@@ -127,10 +127,11 @@ export function HScrollRow({
         <div
           ref={scrollerRef}
           className={[
-            "no-scrollbar overflow-x-auto scroll-smooth",
-            "px-1 sm:px-8", // leaves room for arrows
+            "no-scrollbar overflow-x-auto overflow-y-visible scroll-smooth",
+            "px-1 sm:px-8",        // room for arrows
+            "py-3 -my-3",          // breathing room for hover lift without changing layout height
           ].join(" ")}
-        >
+          >
           <div className={["flex", itemGapClassName].join(" ")}>{children}</div>
         </div>
       </div>

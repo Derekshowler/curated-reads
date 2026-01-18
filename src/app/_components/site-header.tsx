@@ -1,3 +1,4 @@
+// src/app/_components/site-header.tsx
 "use client";
 
 import Link from "next/link";
@@ -17,10 +18,15 @@ function initials(nameOrEmail?: string | null) {
   return letters || "CR";
 }
 
-function profileHrefFromSession(email?: string | null) {
-  // Temporary: until we add Profile.handle, use email so lookup works.
-  if (!email) return "/settings/profile";
-  return `/profile/${encodeURIComponent(email)}`;
+function profileHrefFromSession(user?: {
+  email?: string | null;
+  handle?: string | null;
+}) {
+  const handle = user?.handle?.trim();
+  if (handle) return `/u/${encodeURIComponent(handle)}`;
+
+  // No handle yet -> send them to set it
+  return "/settings/profile";
 }
 
 function AccountMenu() {
@@ -28,7 +34,7 @@ function AccountMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
-  const user = session?.user;
+  const user = session?.user as any;
   const email = user?.email ?? null;
   const name = user?.name ?? null;
   const imageUrl = user?.image ?? null;
@@ -101,7 +107,7 @@ function AccountMenu() {
 
           <div className="p-2">
             <Link
-              href={profileHrefFromSession(email)}
+              href={profileHrefFromSession(user)}
               onClick={() => setOpen(false)}
               className="block rounded-xl px-3 py-2 text-sm text-stone-100 hover:bg-white/5"
             >
@@ -135,7 +141,7 @@ export function SiteHeader() {
     <div className="flex items-center justify-between gap-4">
       {/* Brand */}
       <Link href="/" className="flex items-center gap-3">
-        <div className="grid h-9 w-9 place-items-center rounded-full bg-orange-500 text-sm font-bold text-stone-950">
+        <div className="grid h-9 w-9 place-items-center rounded-full bg-amber-500 text-sm font-bold text-stone-950">
           CR
         </div>
         <div className="text-lg font-semibold tracking-tight text-stone-50">

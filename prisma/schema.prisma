@@ -2,10 +2,17 @@
 
 datasource db {
   provider = "postgresql"
+  // NOTE: URL is supplied via prisma.config.ts (Prisma 7+), so no `url = env("DATABASE_URL")` here.
 }
 
 generator client {
   provider = "prisma-client-js"
+}
+
+enum BookListVisibility {
+  PRIVATE
+  PUBLIC
+  UNLISTED
 }
 
 model User {
@@ -15,14 +22,19 @@ model User {
   emailVerified DateTime?
   image         String?
 
+  handle        String?   @unique  // ✅ NEW
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   accounts Account[]
   sessions Session[]
-  profile Profile?
-  lists    BookList[]
+  profile  Profile?
+  lists     BookList[]
+  follows   BookListFollow[]  // ✅ NEW
 }
+
+
 
 model Account {
   id                String  @id @default(cuid())
@@ -61,41 +73,52 @@ model VerificationToken {
 }
 
 model Profile {
-  id             String   @id @default(cuid())
-  user           User     @relation(fields: [userId], references: [id])
-  userId         String   @unique
+  id   String @id @default(cuid())
 
-  displayName    String?
-  bio            String?
-  vibeTags       String[] @default([])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+
+  displayName String?
+  bio         String?
+  vibeTags    String[] @default([])
 
   location       String?
   favoriteGenres String?
   websiteUrl     String?
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-
 model BookList {
-  id          String   @id @default(cuid())
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String
+  id     String @id @default(cuid())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
   name        String
   slug        String
   emoji       String?
   description String?
-  visibility  String   @default("private")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
-  items BookListItem[]
+  visibility BookListVisibility @default(PRIVATE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items     BookListItem[]
+  followers BookListFollow[]  // ✅ NEW
+
+  @@index([userId])
+  @@unique([userId, slug])
+  // Optional (uncomment if you want to prevent duplicate list names per user):
+  // @@unique([userId, name])
 }
 
 model BookListItem {
-  id     String   @id @default(cuid())
-  list   BookList @relation(fields: [listId], references: [id])
+  id     String @id @default(cuid())
+
+  list   BookList @relation(fields: [listId], references: [id], onDelete: Cascade)
   listId String
 
   bookId   String
@@ -107,4 +130,23 @@ model BookListItem {
   publishedYear String?
 
   createdAt DateTime @default(now())
+
+  @@index([listId, createdAt])
+  @@unique([listId, bookId])
+}
+
+model BookListFollow {
+  id        String   @id @default(cuid())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  list      BookList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  listId    String
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, listId])
+  @@index([listId, createdAt])
+  @@index([userId, createdAt])
 }

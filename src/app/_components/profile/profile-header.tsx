@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 export type ProfileHeaderData = {
-  username: string;              // URL slug/handle
+  handle: string;                // ✅ User.handle
   displayName: string;           // fallback to user.name/email
   avatarUrl?: string | null;     // from user.image
   bio?: string | null;           // from profile.bio
@@ -17,7 +17,7 @@ function initials(name: string) {
 }
 
 export function ProfileHeader({ data }: { data: ProfileHeaderData }) {
-  const { username, displayName, avatarUrl, bio, vibeTags = [], isOwner = false } = data;
+  const { handle, displayName, avatarUrl, bio, vibeTags = [], isOwner = false } = data;
   const tags = vibeTags.slice(0, 5);
 
   return (
@@ -51,7 +51,7 @@ export function ProfileHeader({ data }: { data: ProfileHeaderData }) {
                     {displayName}
                   </h1>
                   <p className="mt-0.5 truncate text-sm text-stone-300/70">
-                    @{username}
+                    @{handle}
                   </p>
                 </div>
 
@@ -86,13 +86,11 @@ export function ProfileHeader({ data }: { data: ProfileHeaderData }) {
                     </span>
                   ))}
                 </div>
-              ) : (
-                isOwner ? (
-                  <div className="mt-3 text-xs text-stone-400">
-                    Add up to 5 vibe tags (e.g., Cozy • Mystery • Lit Fic)
-                  </div>
-                ) : null
-              )}
+              ) : isOwner ? (
+                <div className="mt-3 text-xs text-stone-400">
+                  Add up to 5 vibe tags (e.g., Cozy • Mystery • Lit Fic)
+                </div>
+              ) : null}
             </div>
           </div>
 
