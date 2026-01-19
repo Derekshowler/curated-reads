@@ -1,40 +1,26 @@
-// prisma/schema.prisma
-
-datasource db {
-  provider = "postgresql"
-  // NOTE: URL is supplied via prisma.config.ts (Prisma 7+), so no `url = env("DATABASE_URL")` here.
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
-enum BookListVisibility {
-  PRIVATE
-  PUBLIC
-  UNLISTED
+datasource db {
+  provider = "postgresql"
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String           @id @default(cuid())
+  email         String?          @unique
   name          String?
-  email         String?   @unique
-  emailVerified DateTime?
   image         String?
-
-  handle        String?   @unique  // ✅ NEW
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  accounts Account[]
-  sessions Session[]
-  profile  Profile?
-  lists     BookList[]
-  follows   BookListFollow[]  // ✅ NEW
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  emailVerified DateTime?
+  handle        String?          @unique
+  accounts      Account[]
+  lists         BookList[]
+  follows       BookListFollow[]
+  profile       Profile?
+  sessions      Session[]
 }
-
-
 
 model Account {
   id                String  @id @default(cuid())
@@ -42,15 +28,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -60,8 +45,7 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
@@ -73,80 +57,68 @@ model VerificationToken {
 }
 
 model Profile {
-  id   String @id @default(cuid())
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String @unique
-
-  displayName String?
-  bio         String?
-  vibeTags    String[] @default([])
-
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  displayName    String?
+  bio            String?
   location       String?
   favoriteGenres String?
   websiteUrl     String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  vibeTags       String[] @default([])
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model BookList {
-  id     String @id @default(cuid())
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String
-
+  id          String             @id @default(cuid())
+  userId      String
   name        String
   slug        String
   emoji       String?
   description String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  visibility  BookListVisibility @default(PRIVATE)
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  followers   BookListFollow[]
+  items       BookListItem[]
 
-  visibility BookListVisibility @default(PRIVATE)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  items     BookListItem[]
-  followers BookListFollow[]  // ✅ NEW
-
-  @@index([userId])
   @@unique([userId, slug])
-  // Optional (uncomment if you want to prevent duplicate list names per user):
-  // @@unique([userId, name])
+  @@index([userId])
 }
 
 model BookListItem {
-  id     String @id @default(cuid())
-
-  list   BookList @relation(fields: [listId], references: [id], onDelete: Cascade)
-  listId String
-
-  bookId   String
-  position Int    @default(0)
-
+  id            String   @id @default(cuid())
+  listId        String
+  bookId        String
+  position      Int      @default(0)
   title         String
   authors       String
   coverImageUrl String?
   publishedYear String?
+  createdAt     DateTime @default(now())
+  list          BookList @relation(fields: [listId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-
-  @@index([listId, createdAt])
   @@unique([listId, bookId])
+  @@index([listId, createdAt])
 }
 
 model BookListFollow {
   id        String   @id @default(cuid())
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
-
-  list      BookList @relation(fields: [listId], references: [id], onDelete: Cascade)
   listId    String
-
   createdAt DateTime @default(now())
+  list      BookList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, listId])
   @@index([listId, createdAt])
   @@index([userId, createdAt])
+}
+
+enum BookListVisibility {
+  PRIVATE
+  PUBLIC
+  UNLISTED
 }

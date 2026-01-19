@@ -23,7 +23,7 @@ function profileHrefFromSession(user?: {
   handle?: string | null;
 }) {
   const handle = user?.handle?.trim();
-  if (handle) return `/u/${encodeURIComponent(handle)}`;
+  if (handle) return `/user/${encodeURIComponent(handle)}`;
 
   // No handle yet -> send them to set it
   return "/settings/profile";
@@ -158,10 +158,10 @@ export function SiteHeader() {
           Home
         </Link>
         <Link
-          href="/discover"
+          href="/search"
           className="rounded-full border border-stone-700/60 bg-stone-950 px-4 py-2 text-sm text-stone-100 hover:border-stone-600"
         >
-          Discover
+          Search
         </Link>
 
         {/* Account */}

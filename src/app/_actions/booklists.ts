@@ -1,182 +1,122 @@
-'use server';
+"use server";
 
-import { prisma } from '@/lib/db';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { getServerSession } from 'next-auth';
-import type { BookListVisibility } from '@prisma/client';
+import { prisma } from "@/lib/db";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 function slugify(input: string) {
   return input
-    .toLowerCase()
     .trim()
-    .replace(/['"]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)+/g, '');
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "")
+    .slice(0, 60);
 }
 
-async function requireUserId(): Promise<string> {
+async function requireUserId() {
   const session = await getServerSession(authOptions);
-
-  // If you've added session callback to include id, this works:
-  const sessionUserId = (session?.user as any)?.id as string | undefined;
-  if (sessionUserId) return sessionUserId;
-
-  // Fallback: look up by email (works out-of-the-box with NextAuth)
-  const email = session?.user?.email;
-  if (!email) throw new Error('Not authenticated');
-
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true },
-  });
-  if (!user) throw new Error('User not found');
-
-  return user.id;
+  const userId = (session?.user as any)?.id as string | undefined;
+  if (!userId) throw new Error("Not authenticated");
+  return userId;
 }
 
-async function generateUniqueSlug(userId: string, name: string) {
-  const base = slugify(name) || 'list';
-
-  // Find existing slugs that start with base
-  const existing = await prisma.bookList.findMany({
-    where: { userId, slug: { startsWith: base } },
-    select: { slug: true },
-  });
-
-  if (existing.length === 0) return base;
-
-  const used = new Set(existing.map((e) => e.slug));
-  if (!used.has(base)) return base;
-
-  // base-2, base-3, ...
-  for (let i = 2; i < 9999; i++) {
-    const candidate = `${base}-${i}`;
-    if (!used.has(candidate)) return candidate;
-  }
-
-  // extremely unlikely fallback
-  return `${base}-${Date.now()}`;
-}
-
-export async function createBookList(input: {
-  name: string;
-  description?: string;
-  emoji?: string;
-  visibility?: BookListVisibility;
-}) {
+/** If the user has no lists yet, make a default one. Returns listId. */
+export async function ensureDefaultList() {
   const userId = await requireUserId();
 
-  const name = input.name.trim();
-  if (!name) throw new Error('Name is required');
+  const existing = await prisma.bookList.findFirst({
+    where: { userId },
+    select: { id: true },
+  });
+  if (existing) return { listId: existing.id };
 
-  const slug = await generateUniqueSlug(userId, name);
+  const baseName = "My First List";
+  const baseSlug = slugify(baseName) || "my-first-list";
+
+  // ensure slug uniqueness per user
+  let slug = baseSlug;
+  for (let i = 1; i <= 20; i++) {
+    const dup = await prisma.bookList.findUnique({
+      where: { userId_slug: { userId, slug } },
+      select: { id: true },
+    });
+    if (!dup) break;
+    slug = `${baseSlug}-${i}`;
+  }
 
   const list = await prisma.bookList.create({
     data: {
       userId,
-      name,
+      name: baseName,
       slug,
-      emoji: input.emoji?.trim() || null,
-      description: input.description?.trim() || null,
-      visibility: input.visibility ?? 'PRIVATE',
+      emoji: "📚",
+      visibility: "PRIVATE",
+      description: "A starter list to save books you like.",
     },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      visibility: true,
-      createdAt: true,
-      updatedAt: true,
-    },
+    select: { id: true },
   });
 
-  return list;
+  return { listId: list.id };
 }
 
-export async function getMyBookLists() {
+export async function getMyListsLite() {
   const userId = await requireUserId();
 
   return prisma.bookList.findMany({
     where: { userId },
-    orderBy: { updatedAt: 'desc' },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      emoji: true,
-      visibility: true,
-      updatedAt: true,
-      _count: { select: { items: true } },
-    },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true, name: true, emoji: true, slug: true, visibility: true },
   });
 }
 
 /**
- * Adds a book to a list (your schema stores book fields directly on BookListItem).
+ * Adds a book to a list.
+ * If listId is missing, we create/use the default list automatically.
  */
 export async function addBookToList(input: {
-  listId: string;
+  listId?: string | null;
   book: {
-    bookId: string; // IMPORTANT: stable external id (ISBNdb id OR ISBN13 string you choose)
+    bookId: string; // stable id from ISBNdb (or fallback)
     title: string;
-    authors: string;
+    authors?: string | null;
     coverImageUrl?: string | null;
     publishedYear?: string | null;
   };
-  position?: number; // optional
 }) {
   const userId = await requireUserId();
 
-  // Ensure user owns the list
-  const list = await prisma.bookList.findFirst({
-    where: { id: input.listId, userId },
+  const listId =
+    input.listId && input.listId.trim()
+      ? input.listId
+      : (await ensureDefaultList()).listId;
+
+  // Ownership check
+  const owns = await prisma.bookList.findFirst({
+    where: { id: listId, userId },
     select: { id: true },
   });
-  if (!list) throw new Error('List not found');
+  if (!owns) throw new Error("List not found");
 
-  const b = input.book;
-  if (!b.bookId || !b.title || !b.authors) {
-    throw new Error('bookId, title, and authors are required');
-  }
-
-  // Upsert list item by compound unique (listId, bookId)
-  const item = await prisma.bookListItem.upsert({
-    where: { listId_bookId: { listId: input.listId, bookId: b.bookId } },
+  // Insert (no dupes because @@unique([listId, bookId]))
+  await prisma.bookListItem.upsert({
+    where: { listId_bookId: { listId, bookId: input.book.bookId } },
     create: {
-      listId: input.listId,
-      bookId: b.bookId,
-      position: input.position ?? 0,
-      title: b.title,
-      authors: b.authors,
-      coverImageUrl: b.coverImageUrl ?? null,
-      publishedYear: b.publishedYear ?? null,
+      listId,
+      bookId: input.book.bookId,
+      title: input.book.title,
+      authors: input.book.authors ?? "",
+      coverImageUrl: input.book.coverImageUrl ?? null,
+      publishedYear: input.book.publishedYear ?? null,
     },
-    update: {
-      // optional: keep metadata fresh if the source changes
-      title: b.title,
-      authors: b.authors,
-      coverImageUrl: b.coverImageUrl ?? null,
-      publishedYear: b.publishedYear ?? null,
-    },
-    select: { id: true, listId: true, bookId: true },
+    update: {}, // noop if already exists
   });
 
-  return { ok: true, item };
-}
-
-export async function removeBookFromList(input: { listId: string; bookId: string }) {
-  const userId = await requireUserId();
-
-  // Ensure user owns the list
-  const list = await prisma.bookList.findFirst({
-    where: { id: input.listId, userId },
+  // touch updatedAt
+  await prisma.bookList.update({
+    where: { id: listId },
+    data: { updatedAt: new Date() },
     select: { id: true },
   });
-  if (!list) throw new Error('List not found');
 
-  await prisma.bookListItem.delete({
-    where: { listId_bookId: { listId: input.listId, bookId: input.bookId } },
-  });
-
-  return { ok: true };
+  return { ok: true, listId };
 }
